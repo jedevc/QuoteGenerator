@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Quotes</title>
+
+    <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #ffffff;
+      transition: background-color 0.5s ease;
+
+      width: 100vw;
+      height: 100vh;
+
+      margin: 0;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #quote {
+      background-color: #ffffff;
+
+      max-height: 100%;
+      transition: background-color 0.5s ease;
+      overflow: hidden;
+
+      padding-top: 1.5em;
+      padding-bottom: 1em;
+      padding-left: 1em;
+      padding-right: 1em;
+
+      width: 60%;
+
+      border-radius: 10px;
+    }
+
+    @media (max-width: 800px) {
+      #quote {
+        width: 90%;
+      }
+    }
+
+    #author {
+      text-align: right;
+    }
+
+    #buttons {
+      text-align: right;
+    }
+
+    #next {
+      background-color: #6A6A6A;
+      transition: background-color 0.3s ease;
+
+      font-size: inherit;
+      font-weight: bold;
+      user-select: none;
+
+      display: inline;
+
+      padding-top: 0.3em;
+      padding-bottom: 0.3em;
+      padding-left: 2em;
+      padding-right: 2em;
+
+      border: none;
+      border-radius: 4px;
+    }
+
+    #next:hover {
+      background-color: #505050;
+
+      cursor: pointer;
+    }
+
+    #next:focus {
+      outline: none;
+    }
+    </style>
+  </head>
+  <body>
+    <div id="quote">
+      <p id="text"></p>
+
+      <p id="author"></p>
+
+      <div id="buttons">
+        <button id="next">Next</button>
+      </div>
+    </div>
+
+    <script>
+    class HSLColor {
+      constructor (hue, saturation, lightness) {
+        this.hue = hue
+        this.saturation = saturation
+        this.lightness = lightness
+      }
+
+      static random (saturation = 70, lightness = 60) {
+        let hue = Math.floor(Math.random() * 360)
+        return new HSLColor(hue, saturation, lightness)
+      }
+
+      confine () {
+        if (this.hue > 360) this.hue = this.hue % 360
+        else if (this.hue < 0) this.hue = -this.hue % 360
+
+        if (this.saturation > 100) this.saturation = 100
+        else if (this.saturation < 0) this.saturation = 0
+
+        if (this.lightness > 100) this.lightness = 100
+        else if (this.lightness < 0) this.lightness = 0
+
+        return this
+      }
+
+      altered (hue, saturation, lightness) {
+        return new HSLColor(
+          this.hue + hue,
+          this.saturation + saturation,
+          this.lightness + lightness)
+      }
+
+      toString () {
+        return `hsl(${this.hue}, ${this.saturation}%, ${this.lightness}%)`
+      }
+    }
+
+    function setColors () {
+      let color = HSLColor.random()
+      document.body.style.backgroundColor = color.toString()
+      document.getElementById('quote').style.backgroundColor = color.altered(0, 0, 25).confine().toString()
+      document.getElementById('next').style.backgroundColor = color.toString()
+    }
+
+    function getQuote () {
+      let url = 'http://quotesondesign.com/wp-json/posts?filter[orderby]=rand&filter[posts_per_page]=1?timestamp=' + Date.now()
+      let xhr = new XMLHttpRequest()
+      xhr.open('GET', url)
+
+      return new Promise((resolve, reject) => {
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status <= 400) {
+            let text = xhr.responseText.replace(/<\\?\/?p>/g, '').trim()
+            let quote = JSON.parse(text)[0]
+            resolve(quote)
+          } else {
+            reject()
+          }
+        }
+        xhr.onerror = (err) => {
+          reject(err)
+        }
+        xhr.send()
+      })
+    }
+
+    setColors()
+    getQuote()
+      .then((quote) => {
+        document.querySelector('#quote #text').innerHTML = quote.content
+        document.querySelector('#quote #author').innerHTML = quote.title
+      })
+
+    document.querySelector('#quote #buttons #next').addEventListener('click', () => {
+      setColors()
+      getQuote()
+        .then((quote) => {
+          document.querySelector('#quote #text').innerHTML = quote.content
+          document.querySelector('#quote #author').innerHTML = quote.title
+        })
+    })
+    </script>
+  </body>
+</html>
